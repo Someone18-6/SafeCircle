@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 import 'firebase_options.dart';
 
 const Color navy = Color(0xFF172C48);
@@ -588,33 +588,36 @@ class _DashboardState extends State<Dashboard> {
           );
         },
       ),
-      bottomNavigationBar:
-          MediaQuery.of(context).size.width < 750
-              ? NavigationBar(
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (index) {
-                    setState(() => selectedIndex = index);
-                  },
-                  destinations: const [
-                    NavigationDestination(
-                      icon: Icon(Icons.dashboard_outlined),
-                      label: 'Home',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.people_outline),
-                      label: 'Contacts',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.history),
-                      label: 'History',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.person_outline),
-                      label: 'Profile',
-                    ),
-                  ],
-                )
-              : null,
+      bottomNavigationBar: MediaQuery.of(context).size.width < 750
+    ? NavigationBar(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() => selectedIndex = index);
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            label: 'Contacts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.location_on_outlined),
+            label: 'Location',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            label: 'Settings',
+          ),
+        ],
+      )
+    : null,
     );
   }
 
@@ -709,161 +712,212 @@ class _DashboardState extends State<Dashboard> {
 
   // ================= TOP BAR =================
 
-  Widget _buildTopBar(bool isMobile) {
-    final user = FirebaseAuth.instance.currentUser;
+ Widget _buildTopBar(bool isMobile) {
+  final user = FirebaseAuth.instance.currentUser;
 
-    return Container(
-      height: 76,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFEAECEF)),
+  final pageTitles = [
+    'Your Safety Dashboard',
+    'Trusted Contacts',
+    'My Location',
+    'Alert History',
+    'Settings',
+  ];
+
+  return Container(
+    height: 76,
+    padding: const EdgeInsets.symmetric(horizontal: 24),
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      border: Border(
+        bottom: BorderSide(color: Color(0xFFEAECEF)),
+      ),
+    ),
+    child: Row(
+      children: [
+        Flexible(
+          child: Text(
+            pageTitles[selectedIndex],
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              color: navy,
+            ),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          const Flexible(
+        const Spacer(),
+
+        if (isMobile)
+          CircleAvatar(
+            backgroundColor: const Color(0xFFE8EDF5),
             child: Text(
-              'Your Safety Dashboard',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
+              (user?.displayName?.isNotEmpty == true
+                      ? user!.displayName![0]
+                      : 'U')
+                  .toUpperCase(),
+              style: const TextStyle(
                 color: navy,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          const Spacer(),
-          if (isMobile)
-            CircleAvatar(
-              backgroundColor: const Color(0xFFE8EDF5),
-              child: Text(
-                (user?.displayName?.isNotEmpty == true
-                        ? user!.displayName![0]
-                        : 'U')
-                    .toUpperCase(),
-                style: const TextStyle(
-                  color: navy,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          IconButton(
-            tooltip: 'Logout',
-            onPressed: logout,
-            icon: const Icon(Icons.logout_rounded, color: coral),
+
+        IconButton(
+          tooltip: 'Logout',
+          onPressed: logout,
+          icon: const Icon(
+            Icons.logout_rounded,
+            color: coral,
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   // ================= DASHBOARD CONTENT =================
 
-  Widget _buildDashboardContent(bool isMobile) {
-    final user = FirebaseAuth.instance.currentUser;
-    final firstName = user?.displayName?.trim().split(' ').first;
+  
+Widget _buildDashboardContent(bool isMobile) {
+  switch (selectedIndex) {
+    case 0:
+      return _buildHomePage(isMobile);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Hello, ${firstName?.isNotEmpty == true ? firstName : 'there'}!',
-          style: const TextStyle(
-            fontSize: 27,
-            fontWeight: FontWeight.bold,
-            color: navy,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Your safety matters. Stay connected with your trusted circle.',
-          style: TextStyle(color: Colors.blueGrey),
-        ),
-        const SizedBox(height: 26),
-
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: navy,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: isMobile
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sosText(),
-                    const SizedBox(height: 20),
-                    Center(child: _sosButton()),
-                  ],
-                )
-              : Row(
-                  children: [
-                    Expanded(child: _sosText()),
-                    _sosButton(),
-                  ],
-                ),
-        ),
-
-        const SizedBox(height: 25),
-
-        const Text(
-          'Your Safety Overview',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.bold,
-            color: navy,
-          ),
-        ),
-        const SizedBox(height: 15),
-
-        Wrap(
-          spacing: 15,
-          runSpacing: 15,
-          children: [
-            _statCard(
-              'Trusted Contacts',
-              'Live',
-              Icons.people_outline,
-              const Color(0xFFE8F0FF),
+    case 1:
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            'Trusted Contacts',
+            style: TextStyle(
+              fontSize: 25,
+              fontWeight: FontWeight.bold,
+              color: navy,
             ),
-            _statCard(
-              'Safety Check-ins',
-              'Coming soon',
-              Icons.verified_user_outlined,
-              const Color(0xFFE7F7EF),
-            ),
-            _statCard(
-              'Recent Alerts',
-              'Live',
-              Icons.notifications_active_outlined,
-              const Color(0xFFFFEEEE),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 28),
-
-        const TrustedContactsSection(),
-
-        const SizedBox(height: 25),
-
-        const Text(
-          'SOS Alert History',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.bold,
-            color: navy,
           ),
-        ),
-        const SizedBox(height: 12),
+          SizedBox(height: 8),
+          Text('Manage your emergency contacts.'),
+          SizedBox(height: 24),
+          TrustedContactsSection(),
+        ],
+      );
 
-        const AlertHistorySection(),
-      ],
-    );
+    case 2:
+      return const LocationPage();
+
+    case 3:
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            'Alert History',
+            style: TextStyle(
+              fontSize: 25,
+              fontWeight: FontWeight.bold,
+              color: navy,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text('Review your previously recorded SOS alerts.'),
+          SizedBox(height: 24),
+          AlertHistorySection(),
+        ],
+      );
+
+    case 4:
+      return SettingsPage(onLogout: logout);
+
+    default:
+      return _buildHomePage(isMobile);
   }
+}
+
+Widget _buildHomePage(bool isMobile) {
+  final user = FirebaseAuth.instance.currentUser;
+  final firstName = user?.displayName?.trim().split(' ').first;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Hello, ${firstName?.isNotEmpty == true ? firstName : 'there'}!',
+        style: const TextStyle(
+          fontSize: 27,
+          fontWeight: FontWeight.bold,
+          color: navy,
+        ),
+      ),
+      const SizedBox(height: 6),
+      const Text(
+        'Your safety matters. Stay connected with your trusted circle.',
+        style: TextStyle(color: Colors.blueGrey),
+      ),
+      const SizedBox(height: 26),
+
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: navy,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: isMobile
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sosText(),
+                  const SizedBox(height: 20),
+                  Center(child: _sosButton()),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(child: _sosText()),
+                  _sosButton(),
+                ],
+              ),
+      ),
+
+      const SizedBox(height: 25),
+
+      const Text(
+        'Your Safety Overview',
+        style: TextStyle(
+          fontSize: 19,
+          fontWeight: FontWeight.bold,
+          color: navy,
+        ),
+      ),
+      const SizedBox(height: 15),
+
+      Wrap(
+        spacing: 15,
+        runSpacing: 15,
+        children: [
+          _statCard(
+            'Trusted Contacts',
+            'Live',
+            Icons.people_outline,
+            const Color(0xFFE8F0FF),
+          ),
+          _statCard(
+            'Safety Check-ins',
+            'Coming soon',
+            Icons.verified_user_outlined,
+            const Color(0xFFE7F7EF),
+          ),
+          _statCard(
+            'Recent Alerts',
+            'Live',
+            Icons.notifications_active_outlined,
+            const Color(0xFFFFEEEE),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 
   // ================= SOS UI =================
 
@@ -1371,3 +1425,267 @@ class _TrustedContactsSectionState extends State<TrustedContactsSection> {
     );
   }
 }
+
+class LocationPage extends StatefulWidget {
+  const LocationPage({super.key});
+
+  @override
+  State<LocationPage> createState() => _LocationPageState();
+}
+
+class _LocationPageState extends State<LocationPage> {
+  Position? position;
+  bool loading = false;
+  String? error;
+
+  Future<void> getLocation() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+
+    try {
+      final enabled =
+          await Geolocator.isLocationServiceEnabled();
+
+      if (!enabled) {
+        throw Exception('Please enable location services.');
+      }
+
+      var permission = await Geolocator.checkPermission();
+
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission was not granted.');
+      }
+
+      final result = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        position = result;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => error = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
+    }
+  }
+
+  Future<void> openMap() async {
+    if (position == null) return;
+
+    final url = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query='
+      '${position!.latitude},${position!.longitude}',
+    );
+
+    await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'My Location',
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+            color: navy,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Check your current location and view it on Google Maps.',
+        ),
+        const SizedBox(height: 25),
+
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(25),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFEAECEF)),
+          ),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.location_on,
+                color: coral,
+                size: 55,
+              ),
+              const SizedBox(height: 15),
+
+              if (position == null)
+                const Text(
+                  'Your location has not been retrieved yet.',
+                  textAlign: TextAlign.center,
+                )
+              else ...[
+                const Text(
+                  'Location Retrieved',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Text(
+                  'Latitude: ${position!.latitude}',
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  'Longitude: ${position!.longitude}',
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  'Accuracy: ${position!.accuracy.toStringAsFixed(1)} metres',
+                ),
+                const SizedBox(height: 15),
+                ElevatedButton.icon(
+                  onPressed: openMap,
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Open in Google Maps'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: navy,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+
+              if (error != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  error!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: loading ? null : getLocation,
+                  icon: const Icon(Icons.my_location),
+                  label: Text(
+                    loading ? 'Getting location...' : 'Get My Location',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: coral,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.all(15),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ================= SETTINGS PAGE =================
+
+class SettingsPage extends StatelessWidget {
+  final VoidCallback onLogout;
+
+  const SettingsPage({
+    super.key,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Settings',
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+            color: navy,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text('Manage your SafeCircle account.'),
+        const SizedBox(height: 25),
+
+        Card(
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.account_circle,
+                  color: navy,
+                  size: 55,
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  'Account Information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: navy,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Text('Name: ${user?.displayName ?? 'Not provided'}'),
+                const SizedBox(height: 10),
+                Text('Email: ${user?.email ?? 'Not available'}'),
+                const SizedBox(height: 10),
+                Text(
+                  'Account: ${user?.emailVerified == true ? 'Verified' : 'Email not verified'}',
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onLogout,
+            icon: const Icon(Icons.logout),
+            label: const Text('Logout'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: coral,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(15),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
