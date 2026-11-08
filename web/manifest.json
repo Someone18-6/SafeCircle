@@ -1,11 +1,11 @@
 {
-    "name": "safecircle",
-    "short_name": "safecircle",
+    "name": "SafeCircle - Personal Safety",
+    "short_name": "SafeCircle",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#172C48",
+    "theme_color": "#172C48",
+    "description": "One-tap SOS, live location sharing, trusted contacts and safety check-ins.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

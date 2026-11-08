@@ -1,0 +1,20 @@
+rules_version = '2';
+
+// SafeCircle security rules
+// Every document lives under users/{uid}/... and may only be read or written
+// by the signed-in user whose uid matches. Nobody else (not even another
+// logged-in user) can see someone's contacts, alerts or check-ins.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /{subcollection=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Everything else is denied by default.
+  }
+}
